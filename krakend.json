@@ -1,0 +1,99 @@
+{
+  "$schema": "https://www.krakend.io/schema/v2.5/krakend.json",
+  "version": 3,
+  "port": 8080,
+  "timeout": "3000ms",
+  "cache_ttl": "300s",
+  "endpoints": [
+    {
+      "endpoint": "/recommend",
+      "method": "POST",
+      "input_headers": ["Authorization"],
+      "extra_config": {
+        "auth/validator": {
+          "alg": "RS256",
+          "jwk_url": "https://YOUR_CLERK_DOMAIN/.well-known/jwks.json",
+          "issuer": "https://YOUR_CLERK_DOMAIN",
+          "audience": [],
+          "roles_key": "org_roles",
+          "propagate_claims": [["sub", "X-User-ID"]]
+        },
+        "qos/ratelimit/router": {
+          "strategy": "header",
+          "key": "Authorization",
+          "max_rate": 30,
+          "capacity": 30,
+          "client_max_rate": 30,
+          "every": "24h"
+        },
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["repo_url"],
+          "properties": {
+            "repo_url": {
+              "type": "string",
+              "pattern": "^https://github.com/([a-zA-Z0-9-]+)/([a-zA-Z0-9-._]+)$"
+            },
+            "is_optimized": {
+              "type": "boolean"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "message_on_error": "Invalid request body. Please check the 'repo_url' format and other fields."
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/create-task",
+          "method": "POST",
+          "host": ["http://your-go-service-url"]
+        }
+      ]
+    },
+    {
+      "endpoint": "/recommend",
+      "method": "POST",
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "strategy": "ip",
+          "max_rate": 5,
+          "capacity": 5,
+          "client_max_rate": 5,
+          "every": "24h"
+        },
+        "validation/json-schema": {
+          "type": "object",
+          "required": ["repo_url"],
+          "properties": {
+            "repo_url": {
+              "type": "string",
+              "pattern": "^https://github.com/([a-zA-Z0-9-]+)/([a-zA-Z0-9-._]+)$"
+            },
+            "is_optimized": {
+              "type": "boolean"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "message_on_error": "Invalid request body. Please check the 'repo_url' format and other fields."
+        }
+      },
+      "backend": [
+        {
+          "url_pattern": "/create-task",
+          "method": "POST",
+          "host": ["http://your-go-service-url"]
+        }
+      ]
+    }
+  ]
+}
