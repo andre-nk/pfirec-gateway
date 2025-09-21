@@ -4,9 +4,44 @@
   "port": 8080,
   "timeout": "3000ms",
   "cache_ttl": "300s",
+  "extra_config": {
+    "telemetry/opencensus": {
+      "sample_rate": 100,
+      "reporting_period": 1,
+      "enabled_layers": {
+        "backend": true,
+        "router": true,
+        "pipe": true
+      },
+      "exporters": {
+        "stackdriver": {
+          "project_id": "pfirec-db",
+          "metric_prefix": "krakend",
+          "default_labels": {
+            "service": "pfirec-gateway"
+          }
+        }
+      }
+    },
+    "telemetry/metrics": {
+      "collection_time": "60s",
+      "proxy_disabled": false,
+      "router_disabled": false,
+      "backend_disabled": false,
+      "endpoint_disabled": false,
+      "listen_address": ":8090"
+    },
+    "telemetry/logging": {
+      "level": "INFO",
+      "prefix": "[KRAKEND]",
+      "syslog": false,
+      "stdout": true,
+      "format": "json"
+    }
+  },
   "endpoints": [
     {
-      "endpoint": "/recommend",
+      "endpoint": "/recommend/authenticated",
       "method": "POST",
       "input_headers": ["Authorization"],
       "extra_config": {
@@ -34,6 +69,12 @@
               "type": "string",
               "pattern": "^https://github.com/([a-zA-Z0-9-]+)/([a-zA-Z0-9-._]+)$"
             },
+            "username": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50,
+              "pattern": "^[a-zA-Z0-9-._]+$"
+            },
             "is_optimized": {
               "type": "boolean"
             },
@@ -44,19 +85,19 @@
               }
             }
           },
-          "message_on_error": "Invalid request body. Please check the 'repo_url' format and other fields."
+          "message_on_error": "Invalid request body. Please check the 'repo_url' format, 'username' (if provided), and other fields."
         }
       },
       "backend": [
         {
-          "url_pattern": "/create-task",
+          "url_pattern": "/task",
           "method": "POST",
-          "host": ["http://your-go-service-url"]
+          "host": ["http://pfirec-task-manager:8080"]
         }
       ]
     },
     {
-      "endpoint": "/recommend",
+      "endpoint": "/recommend/anonymous",
       "method": "POST",
       "extra_config": {
         "qos/ratelimit/router": {
@@ -89,9 +130,9 @@
       },
       "backend": [
         {
-          "url_pattern": "/create-task",
+          "url_pattern": "/task",
           "method": "POST",
-          "host": ["http://your-go-service-url"]
+          "host": ["http://pfirec-task-manager:8080"]
         }
       ]
     }
