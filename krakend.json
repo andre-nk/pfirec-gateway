@@ -75,9 +75,6 @@
               "maxLength": 50,
               "pattern": "^[a-zA-Z0-9-._]+$"
             },
-            "is_optimized": {
-              "type": "boolean"
-            },
             "tags": {
               "type": "array",
               "items": {
@@ -115,8 +112,11 @@
               "type": "string",
               "pattern": "^https://github.com/([a-zA-Z0-9-]+)/([a-zA-Z0-9-._]+)$"
             },
-            "is_optimized": {
-              "type": "boolean"
+            "username": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50,
+              "pattern": "^[a-zA-Z0-9-._]+$"
             },
             "tags": {
               "type": "array",
