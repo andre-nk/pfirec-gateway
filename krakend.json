@@ -37,29 +37,29 @@
       "syslog": false,
       "stdout": true,
       "format": "json"
+    },
+    "security/http": {
+      "allowed_hosts": [],
+      "ssl_redirect": false,
+      "frame_deny": true,
+      "content_type_nosniff": true,
+      "browser_xss_filter": true,
+      "content_security_policy": "default-src 'self'"
     }
   },
   "endpoints": [
     {
-      "endpoint": "/recommend/authenticated",
+      "endpoint": "/v1/recommendation/authenticated",
       "method": "POST",
-      "input_headers": ["Authorization"],
+      "input_headers": ["Authorization", "X-GitHub-Token", "Content-Type"],
       "extra_config": {
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "https://YOUR_CLERK_DOMAIN/.well-known/jwks.json",
-          "issuer": "https://YOUR_CLERK_DOMAIN",
+          "jwk_url": "https://keen-mammoth-21.clerk.accounts.dev/.well-known/jwks.json",
+          "issuer": "https://keen-mammoth-21.clerk.accounts.dev",
           "audience": [],
-          "roles_key": "org_roles",
+          "disable_jwk_security": true,
           "propagate_claims": [["sub", "X-User-ID"]]
-        },
-        "qos/ratelimit/router": {
-          "strategy": "header",
-          "key": "Authorization",
-          "max_rate": 30,
-          "capacity": 30,
-          "client_max_rate": 30,
-          "every": "24h"
         },
         "validation/json-schema": {
           "type": "object",
@@ -82,28 +82,28 @@
               }
             }
           },
-          "message_on_error": "Invalid request body. Please check the 'repo_url' format, 'username' (if provided), and other fields."
+          "message_on_error": "Bad Request: Invalid request body. Please ensure 'repo_url' is a valid GitHub repository URL (e.g., https://github.com/owner/repo), 'username' follows GitHub username rules, and 'tags' is an array of strings. Authenticated users are limited to 30 requests per 24 hours."
         }
       },
+      "output_encoding": "no-op",
       "backend": [
         {
-          "url_pattern": "/task",
+          "url_pattern": "/v1/recommendation",
           "method": "POST",
-          "host": ["http://pfirec-task-manager:8080"]
+          "host": ["http://pfirec-task-manager:8080"],
+          "encoding": "no-op",
+          "extra_config": {
+            "backend/http": {
+              "return_error_details": "backend_alias"
+            }
+          }
         }
       ]
     },
     {
-      "endpoint": "/recommend/anonymous",
+      "endpoint": "/v1/recommendation/anonymous",
       "method": "POST",
       "extra_config": {
-        "qos/ratelimit/router": {
-          "strategy": "ip",
-          "max_rate": 5,
-          "capacity": 5,
-          "client_max_rate": 5,
-          "every": "24h"
-        },
         "validation/json-schema": {
           "type": "object",
           "required": ["repo_url"],
@@ -125,14 +125,21 @@
               }
             }
           },
-          "message_on_error": "Invalid request body. Please check the 'repo_url' format and other fields."
+          "message_on_error": "Bad Request: Invalid request body. Please ensure 'repo_url' is a valid GitHub repository URL (e.g., https://github.com/owner/repo), 'username' follows GitHub username rules, and 'tags' is an array of strings. Anonymous users are limited to 20 requests per 24 hours. For higher limits, use authenticated access."
         }
       },
+      "output_encoding": "no-op",
       "backend": [
         {
-          "url_pattern": "/task",
+          "url_pattern": "/v1/recommendation",
           "method": "POST",
-          "host": ["http://pfirec-task-manager:8080"]
+          "host": ["http://pfirec-task-manager:8080"],
+          "encoding": "no-op",
+          "extra_config": {
+            "backend/http": {
+              "return_error_details": "backend_alias"
+            }
+          }
         }
       ]
     }
