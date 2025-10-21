@@ -58,7 +58,12 @@
     {
       "endpoint": "/v1/recommendation/authenticated",
       "method": "POST",
-      "input_headers": ["Authorization", "X-GitHub-Token", "Content-Type"],
+      "input_headers": [
+        "Authorization",
+        "X-GitHub-Token",
+        "X-User-ID",
+        "Content-Type"
+      ],
       "extra_config": {
         "qos/ratelimit/router": {
           "max_rate": 30,
