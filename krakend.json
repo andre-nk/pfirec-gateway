@@ -6,37 +6,43 @@
   "cache_ttl": "300s",
   "extra_config": {
     "telemetry/opencensus": {
-      "sample_rate": 100,
-      "reporting_period": 1,
+      "sample_rate": 10,
+      "reporting_period": 5,
       "enabled_layers": {
         "backend": true,
         "router": true,
-        "pipe": true
+        "pipe": false
       },
       "exporters": {
         "stackdriver": {
           "project_id": "pfirec-db",
           "metric_prefix": "krakend",
           "default_labels": {
-            "service": "pfirec-gateway"
+            "service": "pfirec-gateway",
+            "environment": "production"
           }
         }
       }
     },
-    "telemetry/metrics": {
-      "collection_time": "60s",
-      "proxy_disabled": false,
-      "router_disabled": false,
-      "backend_disabled": false,
-      "endpoint_disabled": false,
-      "listen_address": ":8090"
-    },
     "telemetry/logging": {
       "level": "INFO",
-      "prefix": "[KRAKEND]",
+      "prefix": "[GATEWAY]",
       "syslog": false,
       "stdout": true,
       "format": "json"
+    },
+    "router": {
+      "return_error_msg": true,
+      "hide_version_header": true,
+      "auto_options": true
+    },
+    "security/cors": {
+      "allow_origins": ["*"],
+      "allow_methods": ["GET", "POST", "OPTIONS"],
+      "allow_headers": ["Authorization", "Content-Type", "X-GitHub-Token"],
+      "expose_headers": ["X-Request-Id"],
+      "max_age": "12h",
+      "allow_credentials": false
     },
     "security/http": {
       "allowed_hosts": [],
@@ -44,7 +50,8 @@
       "frame_deny": true,
       "content_type_nosniff": true,
       "browser_xss_filter": true,
-      "content_security_policy": "default-src 'self'"
+      "content_security_policy": "default-src 'self'",
+      "referrer_policy": "strict-origin-when-cross-origin"
     }
   },
   "endpoints": [
@@ -53,6 +60,12 @@
       "method": "POST",
       "input_headers": ["Authorization", "X-GitHub-Token", "Content-Type"],
       "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 30,
+          "client_max_rate": 30,
+          "strategy": "ip",
+          "key": "X-User-ID"
+        },
         "auth/validator": {
           "alg": "RS256",
           "jwk_url": "https://keen-mammoth-21.clerk.accounts.dev/.well-known/jwks.json",
@@ -82,7 +95,7 @@
               }
             }
           },
-          "message_on_error": "Bad Request: Invalid request body. Please ensure 'repo_url' is a valid GitHub repository URL (e.g., https://github.com/owner/repo), 'username' follows GitHub username rules, and 'tags' is an array of strings. Authenticated users are limited to 30 requests per 24 hours."
+          "message_on_error": "Invalid request: 'repo_url' must be a valid GitHub URL, 'username' must follow GitHub rules"
         }
       },
       "output_encoding": "no-op",
@@ -104,6 +117,11 @@
       "endpoint": "/v1/recommendation/anonymous",
       "method": "POST",
       "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 20,
+          "client_max_rate": 20,
+          "strategy": "ip"
+        },
         "validation/json-schema": {
           "type": "object",
           "required": ["repo_url"],
@@ -125,7 +143,7 @@
               }
             }
           },
-          "message_on_error": "Bad Request: Invalid request body. Please ensure 'repo_url' is a valid GitHub repository URL (e.g., https://github.com/owner/repo), 'username' follows GitHub username rules, and 'tags' is an array of strings. Anonymous users are limited to 20 requests per 24 hours. For higher limits, use authenticated access."
+          "message_on_error": "Invalid request: 'repo_url' must be a valid GitHub URL, 'username' must follow GitHub rules"
         }
       },
       "output_encoding": "no-op",
