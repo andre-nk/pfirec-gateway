@@ -73,8 +73,8 @@
         },
         "auth/validator": {
           "alg": "RS256",
-          "jwk_url": "https://keen-mammoth-21.clerk.accounts.dev/.well-known/jwks.json",
-          "issuer": "https://keen-mammoth-21.clerk.accounts.dev",
+          "jwk_url": "${CLERK_JWK_URL}",
+          "issuer": "${CLERK_ISSUER}",
           "audience": [],
           "disable_jwk_security": true,
           "propagate_claims": [["sub", "X-User-ID"]]
@@ -108,7 +108,7 @@
         {
           "url_pattern": "/v1/recommendation",
           "method": "POST",
-          "host": ["http://pfirec-task-manager:8080"],
+          "host": ["${TASK_MANAGER_HOST}"],
           "encoding": "no-op",
           "extra_config": {
             "backend/http": {
@@ -156,7 +156,7 @@
         {
           "url_pattern": "/v1/recommendation",
           "method": "POST",
-          "host": ["http://pfirec-task-manager:8080"],
+          "host": ["${TASK_MANAGER_HOST}"],
           "encoding": "no-op",
           "extra_config": {
             "backend/http": {
